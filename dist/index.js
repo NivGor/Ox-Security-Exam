@@ -6,9 +6,9 @@ import { startStandaloneServer } from '@apollo/server/standalone';
 const typeDefs = `#graphql
 
   type Employee {
-  ID: String
-  Name: String
-  Status: String
+    ID: String
+    Name: String
+    Status: String
 }
 
   type Query {
@@ -18,11 +18,7 @@ const typeDefs = `#graphql
     RemoveEmployee(ID: String!): Boolean!
   }
 `;
-const employees = [{
-        ID: "bla",
-        Name: "Niv",
-        Status: "Working"
-    }];
+const employees = [];
 const validStatus = ["Working", "OnVacation", "LunchTime", "BusinessTrip"];
 const resolvers = {
     Query: {
