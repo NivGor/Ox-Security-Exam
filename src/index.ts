@@ -20,11 +20,7 @@ const typeDefs = `#graphql
   }
 `;
 
-const employees = [{
-    ID: "bla",
-    Name:"Niv",
-    Status:"Working"
-}];
+const employees = [];
 
   const validStatus = ["Working", "OnVacation", "LunchTime", "BusinessTrip"]
 
