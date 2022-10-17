@@ -1,9 +1,7 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
+import { GraphQLError } from 'graphql';
 
-// A schema is a collection of type definitions (hence "typeDefs")
-// that together define the "shape" of queries that are executed against
-// your data.
 const typeDefs = `#graphql
 
   type Employee {
@@ -14,65 +12,124 @@ const typeDefs = `#graphql
 
   type Query {
     GetEmployees: [Employee]!
-    CreateEmployee(Name: String!, Status: String!): Employee
-    ChangeStatus(ID: String!, Status: String!): Boolean!
-    RemoveEmployee(ID: String!): Boolean!
-  }
+    CreateEmployee(Name: String, Status: String): Employee
+    ChangeStatus(ID: String, Status: String): Boolean!
+    RemoveEmployee(ID: String): Boolean!
+}
 `;
 
 const employees = [];
+var id = 0;
 
-  const validStatus = ["Working", "OnVacation", "LunchTime", "BusinessTrip"]
+const validStatus = ["Working", "OnVacation", "LunchTime", "BusinessTrip"]
 
-  const resolvers = {
-    Query: {
-        GetEmployees() {
-            return employees
-        },
+function checkName(name) {
+  if (name === undefined || name == "") {
+    console.error('Name is required')
+    throw new GraphQLError('Name is required', {
+      extensions: {
+        code: 'BAD_USER_INPUT',
+      },
+    })
+  }
+  return true
+}
 
-        CreateEmployee(_, args) {
-            if (!validStatus.includes(args.Status)) { return null; }
-            var id = Date.now().toString(36) + Math.random().toString(36)
-            var employee =  {
-                ID: id,
-                Name: args.Name,
-                Status: args.Status 
-            };
-            employees.push(employee)
-            return employee
-        },
+function checkStatus(status) {
+  if (status === undefined || status == "") {
+    console.error('Status is required')
+    throw new GraphQLError('Status is required', {
+      extensions: {
+        code: 'BAD_USER_INPUT',
+      },
+    })
+  }
+  if (!validStatus.includes(status)) {
+    console.error('Invalid status')
+    throw new GraphQLError('Invalid status', {
+      extensions: {
+        code: 'BAD_USER_INPUT',
+      },
+    })
+  }
+  return true
+}
 
-        ChangeStatus(_, args) {
-            if (!validStatus.includes(args.Status)) {return false;}
-            var employee = employees.find((emp) => emp.ID === args.ID)
-            if (!employee) {return false;}
-            employee.Status = args.Status
-            return true
-        },
+function checkID(id) {
+  if (id === undefined || id === "") {
+    console.error('ID is required')
+    throw new GraphQLError('ID is required', {
+      extensions: {
+        code: 'BAD_USER_INPUT',
+      },
+    })
+  }
+  if (employees.find((emp) => emp.ID === id) === undefined) {
+    console.error('This ID does not match any employee ID')
+    throw new GraphQLError('This ID does not match any employee ID', {
+      extensions: {
+        code: 'BAD_USER_INPUT',
+      },
+    })
+  }
+  return true
+}
 
-        RemoveEmployee(_, args) {
-            var employee = employees.find((emp) => emp.ID === args.ID)
-            if (!employee) {return false;}
-            var index = employees.indexOf(employee)
-            employees.splice(index, 1)
-            return true;
-        }
-    },
-  };
+const resolvers = {
+  Query: {
+      GetEmployees() {
+        return employees
+      },
 
-  // The ApolloServer constructor requires two parameters: your schema
-// definition and your set of resolvers.
+      CreateEmployee(_, args) {
+        console.log('Checking arguments...')
+        if (!checkName(args.Name)) {return null}
+        if (!checkStatus(args.Status)) {return null}
+        console.log('Executing CreateEmployee()')
+        id++;
+        var empId = id.toString()
+        var employee =  {
+            ID: empId,
+            Name: args.Name,
+            Status: args.Status 
+        };
+        employees.push(employee)
+        console.log('Employee' , args.Name, 'created successfully!')
+        return employee
+      },
+
+      ChangeStatus(_, args) {
+        console.log('Checking arguments...')
+        if (!checkStatus(args.Status)) {return false}
+        if (!checkID(args.ID)) {return false}
+        console.log('Executing ChangeStatus()')
+        var employee = employees.find((emp) => emp.ID === args.ID)
+        employee.Status = args.Status
+        console.log('Status of employee', args.ID,'changed successfully to', args.Status)
+        return true
+      },
+
+      RemoveEmployee(_, args) {
+        console.log('Checking arguments...')
+        if (!checkID(args.ID)) {return false}
+        console.log('Executing RemoveEmployee()')
+        var employee = employees.find((emp) => emp.ID === args.ID)
+        var index = employees.indexOf(employee)
+        employees.splice(index, 1)
+        console.log('Employee', args.ID, 'removed successfully' )
+        return true
+      }
+  },
+};
+
+
 const server = new ApolloServer({
-    typeDefs,
-    resolvers,
-  });
+  typeDefs,
+  resolvers,
+});
   
-  // Passing an ApolloServer instance to the `startStandaloneServer` function:
-  //  1. creates an Express app
-  //  2. installs your ApolloServer instance as middleware
-  //  3. prepares your app to handle incoming requests
-  const { url } = await startStandaloneServer(server, {
-    listen: { port: 4000 },
-  });
+const { url } = await startStandaloneServer(server, {
+  listen: { port: 4000 },
+});
   
-  console.log(`🚀  Server ready at: ${url}`);
+console.log(`🚀  Server ready at: ${url}`);

@@ -43,9 +43,10 @@ const resolvers = {
                 return false;
             }
             var employee = employees.find((emp) => emp.ID === args.ID);
-            if (employee) {
-                employee.Status = args.Status;
+            if (!employee) {
+                return false;
             }
+            employee.Status = args.Status;
             return true;
         },
         RemoveEmployee(_, args) {
